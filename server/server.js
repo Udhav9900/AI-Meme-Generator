@@ -1,20 +1,23 @@
-// server/server.js
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { Configuration, OpenAIApi } from 'openai';
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { Configuration, OpenAIApi } = require("openai");
 
 dotenv.config();
+
 const app = express();
+const PORT = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
 
-const config = new Configuration({
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(config);
 
-app.post("/generate-caption", async (req, res) => {
+const openai = new OpenAIApi(configuration);
+
+app.post("/generate", async (req, res) => {
   const { topic } = req.body;
 
   try {
@@ -23,16 +26,23 @@ app.post("/generate-caption", async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `Create a funny meme caption related to current social media trends. Topic: ${topic}`,
+          content: `Create a funny meme caption about: ${topic}`,
         },
       ],
     });
 
-    res.json({ caption: response.data.choices[0].message.content.trim() });
+    const caption = response.data.choices[0].message.content.trim();
+    res.json({ caption });
   } catch (err) {
-    console.error("Caption Error:", err.response?.data || err.message);
-    res.status(500).json({ caption: "Error generating caption." });
+    console.error("OpenAI API Error:", err);
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.listen(5000, () => console.log("✅ Backend running on http://localhost:5000"));
+app.get("/", (req, res) => {
+  res.send("🟢 AI Meme Generator Backend Running");
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
